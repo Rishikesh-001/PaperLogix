@@ -267,14 +267,13 @@ async function findOwnedAccount(userId, accountId) {
 }
 
 app.get('/api/config', (_req, res) => {
-  const integrationsAvailable = initializeIntegrations();
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    configured: configurationReady && integrationsAvailable,
+    configured: configurationReady,
     missingEnvironment,
     integrationError:
-      configurationReady && !integrationsAvailable
+      integrationInitializationFailed
         ? 'Server integrations could not initialize. Check the Vercel Node.js runtime and function logs.'
         : null,
   });
