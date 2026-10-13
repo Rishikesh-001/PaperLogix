@@ -482,8 +482,19 @@ async function apiRequest(url, options = {}) {
       ...options.headers,
     },
   });
-  const result = response.status === 204 ? {} : await response.json();
-  if (!response.ok) throw new Error(result.error || 'PaperLogix could not complete the request.');
+  let result = {};
+  if (response.status !== 204) {
+    try {
+      result = await response.json();
+    } catch {
+      result = {};
+    }
+  }
+  if (!response.ok) {
+    throw new Error(
+      result.error || `PaperLogix server error (status ${response.status}). Check Vercel function logs.`,
+    );
+  }
   return result;
 }
 function showFormMessage(element, message, isError = false) {
@@ -600,8 +611,17 @@ document.getElementById('authForm').addEventListener('submit', async (event) => 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'PaperLogix could not complete sign-in.');
+    let result = {};
+    try {
+      result = await response.json();
+    } catch {
+      result = {};
+    }
+    if (!response.ok) {
+      throw new Error(
+        result.error || `PaperLogix server error (status ${response.status}). Check Vercel function logs.`,
+      );
+    }
 
     if (result.session) {
       const { error } = await supabaseClient.auth.setSession(result.session);

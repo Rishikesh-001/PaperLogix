@@ -15,7 +15,15 @@ const missingEnvironment = requiredEnvironment.filter((name) => !process.env[nam
 let supabaseOrigin = null;
 if (process.env.SUPABASE_URL) {
   try {
-    supabaseOrigin = new URL(process.env.SUPABASE_URL).origin;
+    const parsed = new URL(process.env.SUPABASE_URL);
+    if (parsed.hostname.includes('supabase.com') && parsed.pathname.includes('/dashboard/project/')) {
+      const match = parsed.pathname.match(/\/dashboard\/project\/([^/?#]+)/);
+      const projectRef = match ? match[1] : '<project-ref>';
+      missingEnvironment.push(
+        `SUPABASE_URL is set to the dashboard URL. Change it to https://${projectRef}.supabase.co in Vercel`,
+      );
+    }
+    supabaseOrigin = parsed.origin;
   } catch {
     missingEnvironment.push('SUPABASE_URL (must be a valid URL)');
   }
@@ -45,7 +53,10 @@ function initializeIntegrations() {
     return true;
   } catch (error) {
     integrationInitializationFailed = true;
-    console.error('PaperLogix integration initialization failed', { name: error.name });
+    console.error('PaperLogix integration initialization failed', {
+      name: error.name,
+      message: error.message,
+    });
     return false;
   }
 }
@@ -88,7 +99,11 @@ function sendError(res, status, message) {
 }
 
 function sendSupabaseAuthError(res, error) {
-  if (/failed to fetch|fetch failed|networkerror/i.test(error.message || '')) {
+  const message = error.message || '';
+  if (
+    /failed to fetch|fetch failed|networkerror|unexpected token '<'|is not valid json/i.test(message) ||
+    /supabase\.com\/dashboard/i.test(process.env.SUPABASE_URL || '')
+  ) {
     console.error('Supabase Auth is unreachable', {
       name: error.name,
       cause: error.cause?.code,
