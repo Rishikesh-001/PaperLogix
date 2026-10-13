@@ -24,6 +24,7 @@ if (process.env.SUPABASE_URL) {
 const configurationReady = missingEnvironment.length === 0;
 let supabaseAdmin;
 let metaApi;
+let supabaseAuthClient;
 let integrationInitializationFailed = false;
 
 function initializeIntegrations() {
@@ -84,6 +85,27 @@ const connectLimiter = rateLimit({
 
 function sendError(res, status, message) {
   return res.status(status).json({ error: message });
+}
+
+function sendSupabaseAuthError(res, error) {
+  if (/failed to fetch|fetch failed|networkerror/i.test(error.message || '')) {
+    console.error('Supabase Auth is unreachable', {
+      name: error.name,
+      cause: error.cause?.code,
+    });
+    return sendError(
+      res,
+      502,
+      'Could not reach Supabase Auth. In Vercel, set SUPABASE_URL to the API URL from Supabase Project Settings → API (usually https://<project-ref>.supabase.co), and verify the project is active.',
+    );
+  }
+
+  const status = Number(error.status);
+  return sendError(
+    res,
+    status >= 400 && status < 500 ? status : 502,
+    error.message || 'Supabase could not complete the authentication request.',
+  );
 }
 
 function requireConfiguration(_req, res, next) {
@@ -285,6 +307,84 @@ app.get('/api/health', (_req, res) => {
     configured: configurationReady && initializeIntegrations(),
   });
 });
+
+app.post(
+  '/api/auth/sign-up',
+  asyncRoute(async (req, res) => {
+    const email = String(req.body.email || '').trim();
+    const password = String(req.body.password || '');
+    if (!email || !password) {
+      return sendError(res, 400, 'Enter your email address and password.');
+    }
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      return sendError(
+        res,
+        503,
+        'Supabase sign-in is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel.',
+      );
+    }
+
+    try {
+      supabaseAuthClient ??= require('@supabase/supabase-js').createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY,
+        { auth: { autoRefreshToken: false, persistSession: false } },
+      );
+      const { data, error } = await supabaseAuthClient.auth.signUp({ email, password });
+      if (error) return sendSupabaseAuthError(res, error);
+      return res.json({ user: data.user, session: data.session });
+    } catch (error) {
+      console.error('Supabase sign-up request failed', {
+        name: error.name,
+        cause: error.cause?.code,
+      });
+      return sendError(
+        res,
+        502,
+        'PaperLogix could not reach Supabase Auth. Verify that SUPABASE_URL is the Project URL (https://<project-ref>.supabase.co), the project is active, and its Auth service is available.',
+      );
+    }
+  }),
+);
+
+app.post(
+  '/api/auth/sign-in',
+  asyncRoute(async (req, res) => {
+    const email = String(req.body.email || '').trim();
+    const password = String(req.body.password || '');
+    if (!email || !password) {
+      return sendError(res, 400, 'Enter your email address and password.');
+    }
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      return sendError(
+        res,
+        503,
+        'Supabase sign-in is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel.',
+      );
+    }
+
+    try {
+      supabaseAuthClient ??= require('@supabase/supabase-js').createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY,
+        { auth: { autoRefreshToken: false, persistSession: false } },
+      );
+      const { data, error } = await supabaseAuthClient.auth.signInWithPassword({ email, password });
+      if (error) return sendSupabaseAuthError(res, error);
+      return res.json({ user: data.user, session: data.session });
+    } catch (error) {
+      console.error('Supabase sign-in request failed', {
+        name: error.name,
+        cause: error.cause?.code,
+      });
+      return sendError(
+        res,
+        502,
+        'PaperLogix could not reach Supabase Auth. Verify that SUPABASE_URL is the Project URL (https://<project-ref>.supabase.co), the project is active, and its Auth service is available.',
+      );
+    }
+  }),
+);
 
 app.get(
   '/api/mt5/accounts',

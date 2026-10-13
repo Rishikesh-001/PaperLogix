@@ -591,21 +591,30 @@ document.getElementById('authForm').addEventListener('submit', async (event) => 
   const message = document.getElementById('authMessage');
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
+  const endpoint = authMode === 'signUp' ? '/api/auth/sign-up' : '/api/auth/sign-in';
   submit.disabled = true;
 
   try {
-    if (authMode === 'signUp') {
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'PaperLogix could not complete sign-in.');
+
+    if (result.session) {
+      const { error } = await supabaseClient.auth.setSession(result.session);
       if (error) throw error;
-      if (!data.session) {
-        showFormMessage(message, 'Check your email to confirm your account, then sign in.');
-      }
-    } else {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+    } else if (authMode === 'signUp') {
+      showFormMessage(message, 'Check your email to confirm your account, then sign in.');
     }
   } catch (error) {
-    showFormMessage(message, error.message, true);
+    const messageText =
+      error instanceof TypeError
+        ? 'Could not reach the PaperLogix API. Check your Vercel deployment and try again.'
+        : error.message;
+    showFormMessage(message, messageText, true);
   } finally {
     submit.disabled = false;
   }

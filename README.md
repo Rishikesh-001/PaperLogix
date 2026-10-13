@@ -26,6 +26,7 @@ hosts the static app and Node.js API; Supabase provides authentication and stora
 Browser
   ├─ Supabase Auth (PaperLogix user sign-in)
   └─ Vercel Node.js Function
+       ├─ proxies sign-up/sign-in requests to Supabase Auth
        ├─ verifies the signed-in user
        ├─ stores account ownership and imported deals in Supabase
        └─ connects to MetaApi using a server-only API token
@@ -123,6 +124,14 @@ Keep `.env` private; `.env` files are excluded from Git.
 | `vercel.json` | Static output and function configuration |
 
 ## Troubleshooting
+
+**Sign-up or sign-in says “Failed to fetch”**
+
+The app sends authentication requests through the Vercel API so network and Supabase URL problems
+are reported explicitly. Set `SUPABASE_URL` to the **Project URL / API URL** shown in Supabase
+Project Settings → API (usually `https://<project-ref>.supabase.co`), not the Supabase dashboard
+URL. Confirm the Supabase project is active and `SUPABASE_ANON_KEY` is its publishable/anon key,
+then redeploy Vercel.
 
 **The page or API is unavailable**
 
