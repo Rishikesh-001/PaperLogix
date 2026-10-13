@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="PaperLogix - a beginner-first MT5 demo trading journal." />
+    <title>PaperLogix</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="side">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <span class="brand-name">Paper<span>Logix</span></span>
+        </div>
+        <div class="demo-pill">
+          <b>DEMO ACCOUNT ONLY</b>Learning data from MT5. This app never places trades.
+        </div>
+        <nav class="nav" aria-label="Main navigation">
+          <div class="nav-label">WORKSPACE</div>
+          <button class="active" data-page="dashboard">
+            <span class="icon">⌂</span> Dashboard
+          </button>
+          <div class="analytics-nav" id="analyticsNav">
+            <button class="analytics-toggle" id="analyticsToggle" aria-expanded="true">
+              <span class="left"><span class="icon">▥</span> Analytics</span
+              ><span class="chevron">⌃</span>
+            </button>
+            <div class="analytics-subnav">
+              <button data-page="analytics"><span class="icon">▥</span> Performance</button
+              ><button data-page="reports"><span class="icon">⇩</span> Reports</button
+              ><button data-page="strategies"><span class="icon">◇</span> Strategies</button
+              ><button data-page="replay"><span class="icon">▷</span> Trade replay</button
+              ><button data-page="progress"><span class="icon">◒</span> Progress tracker</button>
+            </div>
+          </div>
+          <button data-page="history"><span class="icon">↕</span> Trade history</button>
+          <button data-page="journal"><span class="icon">✎</span> Journal</button>
+          <button data-page="coach"><span class="icon">✦</span> Coach</button>
+          <div class="nav-label">PLAN</div>
+          <button data-page="rules"><span class="icon">✓</span> Rules & plans</button>
+          <button data-page="progress"><span class="icon">◒</span> Progress</button>
+          <div class="nav-label">ACCOUNT</div>
+          <button data-page="connection"><span class="icon">◉</span> MT5 connection</button>
+          <button data-page="accounts"><span class="icon">⊞</span> Demo accounts</button>
+        </nav>
+        <div class="side-bottom">
+          <button class="btn ghost" data-page="settings">⚙ Settings</button>
+        </div>
+      </aside>
+      <div class="mobile-menu">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <span class="brand-name">Paper<span>Logix</span></span>
+        </div>
+        <nav class="nav">
+          <button class="active" data-page="dashboard">
+            <span class="icon">⌂</span><span>Home</span></button
+          ><button data-page="journal"><span class="icon">✎</span><span>Journal</span></button
+          ><button data-page="coach"><span class="icon">✦</span><span>Coach</span></button>
+        </nav>
+      </div>
+      <main>
+        <div class="top">
+          <div class="crumb">
+            Learning workspace <span style="color: #625b74">/</span>
+            <span id="crumb">Dashboard</span>
+          </div>
+          <div class="sync">
+            <span class="dot"></span> MT5 demo synced 4 min ago
+            <button class="btn small" id="syncBtn">↻ Sync now</button>
+          </div>
+        </div>
+
+        <section id="dashboard" class="page active">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Tuesday, 13 October</div>
+              <h1>Good afternoon, Rishi.</h1>
+              <p class="sub">
+                Your next win is a process win. Review a trade or begin with a focused practice
+                session.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+              <select class="select" id="dashboardAccount" aria-label="Choose demo account">
+                <option value="all">All demo accounts</option></select
+              ><button class="btn primary" data-page="journal">+ Add trade plan</button>
+            </div>
+          </div>
+          <div class="focus">
+            <div class="focus-icon">◎</div>
+            <div>
+              <b>Today’s focus: complete your entry checklist.</b>
+              <p>
+                For your next XAUUSD demo trade, pause until all required plan fields are recorded.
+              </p>
+            </div>
+            <button class="btn" data-page="rules">View checklist</button>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="label">Demo net P&amp;L</div>
+              <div class="value positive" id="dashPnl">+$124.50</div>
+              <div class="hint" id="dashPnlHint">From 8 closed synced trades</div>
+            </div>
+            <div class="metric">
+              <div class="label">Rule adherence</div>
+              <div class="value amber" id="dashAdherence">71%</div>
+              <div class="hint">Only recorded rules are scored</div>
+            </div>
+            <div class="metric">
+              <div class="label">Win rate</div>
+              <div class="value" id="dashWinRate">62.5%</div>
+              <div class="hint" id="dashWinHint">5 wins / 3 losses</div>
+            </div>
+            <div class="metric">
+              <div class="label">Avg. win / loss</div>
+              <div class="value" id="dashAvg">$46 / $29</div>
+              <div class="hint">Imported MT5 demo data</div>
+            </div>
+            <div class="metric">
+              <div class="label">Journal complete</div>
+              <div class="value" id="dashJournal">6 / 8</div>
+              <div class="hint">Reflections recorded</div>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Recent MT5 demo trades</h2>
+                  <p class="caption">Read-only ledger · last successful sync 4 min ago</p>
+                </div>
+                <button class="btn small" data-page="history">View all</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Trade</th>
+                      <th>Result</th>
+                      <th>Plan</th>
+                      <th>Rule status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentTrades"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Process this week</h2>
+                  <p class="caption">Focus on consistency, not volume.</p>
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top">
+                  <span>Plans saved before entry</span><span class="positive">5 / 6</span>
+                </div>
+                <div class="progress"><span style="width: 83%"></span></div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top">
+                  <span>Risk stayed in your limit</span><span class="amber">6 / 8</span>
+                </div>
+                <div class="progress">
+                  <span style="width: 75%; background: var(--amber)"></span>
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Post-trade reflections</span><span>6 / 8</span></div>
+                <div class="progress"><span style="width: 75%; background: #6e75ed"></span></div>
+              </div>
+            </div>
+          </div>
+          <p class="footer-note">
+            Educational practice only. Demo results and process metrics do not predict future
+            results or constitute financial advice.
+          </p>
+        </section>
+
+        <section id="analytics" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Demo performance &amp; process</div>
+              <h1>Analytics</h1>
+              <p class="sub">
+                Review your practice with clear, source-labelled metrics. This view is based on 8
+                closed synced demo trades.
+              </p>
+            </div>
+            <button class="btn" id="analyticsRange">Last 7 days ▾</button>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="label">Net demo P&amp;L</div>
+              <div class="value positive">+$124.50</div>
+              <div class="hint">Realised, after costs when available</div>
+            </div>
+            <div class="metric">
+              <div class="label">Profit factor</div>
+              <div class="value">2.08</div>
+              <div class="hint">Gross wins / gross losses</div>
+            </div>
+            <div class="metric">
+              <div class="label">Expectancy</div>
+              <div class="value">+$15.56</div>
+              <div class="hint">Average per closed trade</div>
+            </div>
+            <div class="metric">
+              <div class="label">Max drawdown</div>
+              <div class="value negative">-$38.40</div>
+              <div class="hint">Closed-trade sequence only</div>
+            </div>
+            <div class="metric">
+              <div class="label">Average R</div>
+              <div class="value">—</div>
+              <div class="hint">More risk data needed</div>
+            </div>
+          </div>
+          <div class="chart-grid">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Closed P&amp;L by trade</h2>
+                  <p class="caption">Imported realised P&amp;L · eight demo trades</p>
+                </div>
+              </div>
+              <div
+                class="chart"
+                aria-label="Bar chart of realised profit and loss for eight closed demo trades"
+              >
+                <div class="bar-group">
+                  <div class="bar" style="height: 42%"></div>
+                  <span class="bar-label">#1</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar loss" style="height: 18%"></div>
+                  <span class="bar-label">#2</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar loss" style="height: 32%"></div>
+                  <span class="bar-label">#3</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar" style="height: 29%"></div>
+                  <span class="bar-label">#4</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar" style="height: 39%"></div>
+                  <span class="bar-label">#5</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar loss" style="height: 22%"></div>
+                  <span class="bar-label">#6</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar" style="height: 19%"></div>
+                  <span class="bar-label">#7</span>
+                </div>
+                <div class="bar-group">
+                  <div class="bar" style="height: 55%"></div>
+                  <span class="bar-label">#8</span>
+                </div>
+              </div>
+              <div class="legend">
+                <span><i></i>Winning trade</span><span><i class="loss-key"></i>Losing trade</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Process coverage</h2>
+                  <p class="caption">Only recorded data is scored</p>
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>Plans completed before entry</span><b class="positive">83%</b>
+                </div>
+                <div class="progress"><span style="width: 83%"></span></div>
+                <div class="breakdown-detail"><span>5 of 6 plans</span><span>1 unknown</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>Risk-limit adherence</span><b class="amber">75%</b>
+                </div>
+                <div class="progress">
+                  <span style="width: 75%; background: var(--amber)"></span>
+                </div>
+                <div class="breakdown-detail">
+                  <span>6 of 8 trades</span><span>2 above limit</span>
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Journal completion</span><b>75%</b></div>
+                <div class="progress"><span style="width: 75%; background: #6e75ed"></span></div>
+                <div class="breakdown-detail">
+                  <span>6 of 8 reflections</span><span>2 missing</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="two-col" style="margin-top: 18px">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Setup breakdown</h2>
+                  <p class="caption">A descriptive view, not proof of causation.</p>
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>London breakout</span><b class="positive">+$92.80</b>
+                </div>
+                <div class="breakdown-detail"><span>2 trades</span><span>100% win rate</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>Trend pullback</span><b class="positive">+$98.30</b>
+                </div>
+                <div class="breakdown-detail"><span>2 trades</span><span>100% win rate</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>Range rejection</span><b class="negative">-$48.00</b>
+                </div>
+                <div class="breakdown-detail"><span>2 trades</span><span>0% win rate</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>What to review next</h2>
+                  <p class="caption">Based on logged process data</p>
+                </div>
+              </div>
+              <div class="insight">
+                <b>Keep a constant risk limit during a loss streak.</b>
+                <p>
+                  Both risk-limit deviations came after a losing XAUUSD trade. Complete the
+                  five-trade exercise to create a cleaner sample for review.
+                </p>
+              </div>
+              <button class="btn primary" data-page="coach">Open coach exercise</button>
+            </div>
+          </div>
+          <p class="footer-note">
+            Analytics are calculated from synced MT5 demo history and your journal. Missing broker
+            fields or unlogged plans are shown as unknown and never counted as success.
+          </p>
+        </section>
+
+        <section id="reports" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Evidence-linked summaries</div>
+              <h1>Reports</h1>
+              <p class="sub">
+                Review a concise weekly summary, then export the synced ledger when you need to
+                investigate further.
+              </p>
+            </div>
+            <button class="btn primary" id="exportCsv">⇩ Export CSV</button>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Weekly practice report</h2>
+                  <p class="caption">7–13 October · 8 closed demo trades</p>
+                </div>
+                <span class="status connected">Ready</span>
+              </div>
+              <div class="insight">
+                <b>What improved</b>
+                <p>
+                  You saved plans before 5 of 6 tracked entries this week. That gives the coach
+                  enough context to compare decisions with outcomes.
+                </p>
+              </div>
+              <div class="insight">
+                <b>Repeated mistake</b>
+                <p>
+                  Two trades exceeded your $25 planned-risk limit. Both followed a loss; this is a
+                  possible pattern, not a conclusion.
+                </p>
+              </div>
+              <div class="insight">
+                <b>One practice task</b>
+                <p>
+                  Complete five trades at or below your risk limit, with a reflection after each
+                  close.
+                </p>
+              </div>
+              <button class="btn" id="printReport">Print report</button>
+            </div>
+            <div class="card">
+              <h2>Report coverage</h2>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Trades included</span><b>8 closed</b></div>
+                <div class="breakdown-detail"><span>MT5 demo ledger</span><span>7 days</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Journal coverage</span><b>6 reflections</b></div>
+                <div class="breakdown-detail">
+                  <span>2 missing</span><span>Shown as unknown</span>
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top">
+                  <span>Connector limits</span><b>SL changes unknown</b>
+                </div>
+                <div class="breakdown-detail">
+                  <span>Not exposed by connector</span><span>Not assumed absent</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="strategies" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Reusable setup templates</div>
+              <h1>Strategies</h1>
+              <p class="sub">
+                Keep a small set of clearly defined setups. Tagging trades lets you compare them
+                later without implying a setup will keep performing.
+              </p>
+            </div>
+            <button class="btn primary" id="newStrategy">+ New strategy</button>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Saved strategies</h2>
+                  <p class="caption">Two examples from your journal</p>
+                </div>
+              </div>
+              <div id="strategyList"></div>
+            </div>
+            <div class="card">
+              <h2 id="strategyTitle">London breakout</h2>
+              <p class="caption" id="strategyDetail" style="margin: 8px 0 18px">
+                Wait for the London-session range to form, then enter only after the planned
+                breakout trigger.
+              </p>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Entry rule</span></div>
+                <div class="rule-detail">
+                  Close beyond the marked range with your planned stop-loss in place.
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Invalidation</span></div>
+                <div class="rule-detail">
+                  Price returns inside the range before the planned target is reached.
+                </div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-top"><span>Observed demo data</span></div>
+                <div class="rule-detail" id="strategyObserved">
+                  2 tagged trades · +$92.80 realised P&amp;L · small sample
+                </div>
+              </div>
+              <button class="btn" style="margin-top: 16px" id="editStrategy">Edit strategy</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="replay" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Educational practice replay</div>
+              <h1>Trade replay</h1>
+              <p class="sub">
+                Step through a labelled practice sequence without seeing the next candle until you
+                choose to continue.
+              </p>
+            </div>
+            <button class="btn" id="replayReset">↺ Reset replay</button>
+          </div>
+          <div class="notice">
+            <span>ⓘ</span>
+            <div>
+              <strong>Practice dataset:</strong> this replay is illustrative and separate from your
+              connected MT5 history. It is not live market data or a trade recommendation.
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>XAUUSD · 15 minute practice sequence</h2>
+                <p class="caption" id="replayStatus">Candle 1 of 6 · Future candles hidden</p>
+              </div>
+              <span class="status warn" id="replayBias">Wait for confirmation</span>
+            </div>
+            <div class="chart" id="replayChart" aria-label="Candle-by-candle replay chart"></div>
+            <div class="legend">
+              <span id="replayNote">Observe the range. Do not decide from one candle.</span>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px">
+              <button class="btn" id="replayStep">Next candle →</button
+              ><button class="btn primary" id="replayDecision">Record decision</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="history" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Imported MT5 demo data</div>
+              <h1>Trade history</h1>
+              <p class="sub">
+                A deduplicated, read-only ledger of trades synced from your connected terminal.
+              </p>
+            </div>
+            <button class="btn" id="historySync">↻ Sync now</button>
+          </div>
+          <div class="notice">
+            <span>ⓘ</span>
+            <div>
+              <strong>Source coverage:</strong> entry, exit, volume and realised P&amp;L were
+              imported. Stop-loss change events are unavailable from this connector.
+            </div>
+          </div>
+          <div class="card">
+            <div class="filterbar">
+              <input class="input" id="tradeSearch" placeholder="Search symbol or setup" /><select
+                class="select"
+                id="filterSymbol"
+              >
+                <option value="all">All instruments</option>
+                <option>XAUUSD</option>
+                <option>EURUSD</option>
+                <option>GBPUSD</option></select
+              ><select class="select" id="filterStatus">
+                <option value="all">All rule statuses</option>
+                <option value="ok">In plan</option>
+                <option value="flag">Review needed</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Instrument / closed</th>
+                    <th>Direction & volume</th>
+                    <th>Result</th>
+                    <th>Plan</th>
+                    <th>Rule status</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTrades"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="journal" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Plan before you trade</div>
+              <h1>Trade journal</h1>
+              <p class="sub">
+                Record the reasoning for your next demo trade. You can link it to an MT5 trade after
+                sync.
+              </p>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>New trade plan</h2>
+                  <p class="caption">Required fields make later feedback more useful.</p>
+                </div>
+              </div>
+              <form id="journalForm">
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="instrument">Instrument</label
+                    ><select id="instrument">
+                      <option>XAUUSD</option>
+                      <option>EURUSD</option>
+                      <option>GBPUSD</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="setup">Setup</label
+                    ><input id="setup" required placeholder="e.g. London breakout" />
+                  </div>
+                  <div class="field">
+                    <label for="direction">Directional thesis</label
+                    ><select id="direction">
+                      <option>Buy</option>
+                      <option>Sell</option>
+                      <option>Wait / no bias</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="risk">Planned risk (account currency)</label
+                    ><input id="risk" required type="number" min="1" placeholder="25" />
+                  </div>
+                  <div class="field full">
+                    <label for="trigger">Entry trigger</label
+                    ><input
+                      id="trigger"
+                      required
+                      placeholder="What must happen before you enter?"
+                    />
+                  </div>
+                  <div class="field full">
+                    <label for="invalidation">Invalidation / stop-loss reason</label
+                    ><input id="invalidation" required placeholder="What proves this idea wrong?" />
+                  </div>
+                  <div class="field full">
+                    <label for="rationale">Why this trade?</label
+                    ><textarea
+                      id="rationale"
+                      required
+                      placeholder="Describe the setup in plain language."
+                    ></textarea>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 15px">
+                  <button class="btn primary" type="submit">Save plan</button>
+                </div>
+              </form>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Pre-trade checklist</h2>
+                  <p class="caption">Your short default checklist</p>
+                </div>
+              </div>
+              <div id="checklist">
+                <button type="button" class="check selected">✓ Setup matches my plan</button>
+                <button type="button" class="check selected">✓ Risk is within $25</button>
+                <button type="button" class="check">☐ Stop-loss is defined</button>
+                <button type="button" class="check">☐ I’m not trading to recover a loss</button>
+              </div>
+              <hr style="border: 0; border-top: 1px solid var(--line); margin: 22px 0" />
+              <h2 style="margin-bottom: 8px">Quick reflection</h2>
+              <p class="caption">
+                After the trade closes, add your emotion and lesson. Missing reflections are not
+                counted as adherence.
+              </p>
+              <button class="btn" style="margin-top: 15px" id="reflectionBtn">
+                Add reflection
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="coach" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Rules-first coaching</div>
+              <h1>Your learning coach</h1>
+              <p class="sub">
+                Every insight uses your recorded data. Patterns are suggestions, not diagnoses or
+                trading predictions.
+              </p>
+            </div>
+          </div>
+          <div class="notice">
+            <span>ⓘ</span>
+            <div>
+              <strong>Evidence threshold:</strong> strong pattern language requires at least 3
+              relevant trades. You can correct any flag or add context.
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Evidence-based insight</h2>
+                  <p class="caption">Updated after your latest sync</p>
+                </div>
+                <span class="status warn">Possible pattern</span>
+              </div>
+              <div class="insight">
+                <b>Risk increased after a losing trade</b>
+                <p>
+                  In 2 of your last 3 synced XAUUSD trades, your position size was above the $25
+                  risk limit you set. Both occurred within 20 minutes of a losing trade. This may be
+                  a post-loss risk-escalation pattern.
+                </p>
+                <div class="evidence">
+                  Evidence: #MT5-1042, #MT5-1039 · 3 relevant trades · 09–12 Oct
+                </div>
+              </div>
+              <div style="display: flex; gap: 9px; flex-wrap: wrap">
+                <button class="btn primary" id="exerciseBtn">Start 5-trade exercise</button
+                ><button class="btn" id="contextBtn">Add context</button
+                ><button class="btn ghost" id="inaccurateBtn">Not accurate</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Recommended exercise</h2>
+                  <p class="caption">One behaviour at a time</p>
+                </div>
+              </div>
+              <div class="focus" style="margin: 0; padding: 15px; border-radius: 10px">
+                <div class="focus-icon">5</div>
+                <div>
+                  <b>Five trades, same risk</b>
+                  <p>
+                    For your next 5 demo trades, keep risk at or below your $25 limit. Record a plan
+                    before entry and a reflection after exit.
+                  </p>
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Exercise progress</span><span>0 / 5</span></div>
+                <div class="progress"><span style="width: 0%"></span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="rules" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Your process guardrails</div>
+              <h1>Rules &amp; plans</h1>
+              <p class="sub">
+                Rules are compared with imported demo trades. They warn you after the fact; they
+                never block or place MT5 orders.
+              </p>
+            </div>
+            <button class="btn primary" id="addRule">+ Add rule</button>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Active rules</h2>
+                  <p class="caption">You can edit these as you learn.</p>
+                </div>
+              </div>
+              <div id="rulesList"></div>
+            </div>
+            <div class="card">
+              <h2>How a rule becomes feedback</h2>
+              <div class="rule-row">
+                <div class="rule-top"><span>1. You set your limit</span></div>
+                <div class="rule-detail">Example: “No more than $25 planned risk per trade.”</div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>2. MT5 data is synced</span></div>
+                <div class="rule-detail">
+                  We compare imported position size and available metadata with your saved rule.
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>3. You review evidence</span></div>
+                <div class="rule-detail">
+                  Flags show the underlying trade and logic. Unknown data stays unknown.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="progress" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Process over profit</div>
+              <h1>Progress tracker</h1>
+              <p class="sub">
+                Your consistency becomes meaningful only with enough recorded trades.
+              </p>
+            </div>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="label">Practice sessions</div>
+              <div class="value">4</div>
+              <div class="hint">This week</div>
+            </div>
+            <div class="metric">
+              <div class="label">Plan completion</div>
+              <div class="value positive">83%</div>
+              <div class="hint">5 of 6 started plans</div>
+            </div>
+            <div class="metric">
+              <div class="label">Risk adherence</div>
+              <div class="value amber">75%</div>
+              <div class="hint">6 trades with enough data</div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Keep the next action small</h2>
+            <p class="sub" style="margin-top: 10px">
+              Complete the “Five trades, same risk” exercise before changing your plan. This gives
+              you a clean comparison point, not a verdict on your ability.
+            </p>
+            <button class="btn primary" style="margin-top: 18px" data-page="coach">
+              Open exercise
+            </button>
+          </div>
+        </section>
+
+        <section id="connection" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Read-only MT5 demo integration</div>
+              <h1>Your MT5 connection</h1>
+              <p class="sub">
+                PaperLogix imports approved demo-account information. It never asks for or stores
+                your MT5 password.
+              </p>
+            </div>
+            <button class="btn" id="disconnectBtn">Disconnect</button>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Demo account</h2>
+                  <p class="caption">Connected through local MT5 connector</p>
+                </div>
+                <span class="status connected">● Connected</span>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Broker / server</span><span>DemoBroker-MT5</span></div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top">
+                  <span>Account type</span><span class="positive">DEMO</span>
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Imported balance</span><span>$10,124.50 USD</span></div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Last successful sync</span><span>4 min ago</span></div>
+              </div>
+              <button class="btn primary" style="margin-top: 18px" id="connectionSync">
+                ↻ Sync now
+              </button>
+            </div>
+            <div class="card">
+              <h2>What we import</h2>
+              <div class="rule-row">
+                <div class="rule-top"><span>Included when available</span></div>
+                <div class="rule-detail">
+                  Deals, orders, positions, direction, volume, entry and exit, realised P&amp;L,
+                  swap, commission, and SL/TP snapshots.
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Not available on this connection</span></div>
+                <div class="rule-detail">
+                  Stop-loss modification history and chart data. We show these as unknown, never as
+                  “no change.”
+                </div>
+              </div>
+              <div class="rule-row">
+                <div class="rule-top"><span>Never collected</span></div>
+                <div class="rule-detail">
+                  Your MT5 master password, investor password, deposits, withdrawals, or
+                  live-account data.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="settings" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Privacy and preferences</div>
+              <h1>Settings</h1>
+              <p class="sub">Control how your practice data is displayed and retained.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="form-grid">
+              <div class="field">
+                <label>Timezone</label
+                ><select>
+                  <option>Asia/Kolkata</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Currency</label
+                ><select>
+                  <option>USD</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap">
+              <button class="btn">Export my data (CSV)</button
+              ><button class="btn" id="deleteData">Delete practice data</button>
+            </div>
+          </div>
+        </section>
+        <section id="accounts" class="page">
+          <div class="headline">
+            <div>
+              <div class="eyebrow">Read-only MT5 demo integration</div>
+              <h1>Demo accounts</h1>
+              <p class="sub">
+                Connect multiple MT5 demo accounts and choose whether the dashboard shows one
+                account or a combined view. Passwords are never collected.
+              </p>
+            </div>
+            <button class="btn primary" id="addAccount">+ Add demo account</button>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Connected demo accounts</h2>
+                <p class="caption">Switch the active scope from any account card below.</p>
+              </div>
+              <span class="status connected" id="accountCount">2 connected</span>
+            </div>
+            <div id="accountList"></div>
+          </div>
+          <p class="footer-note">
+            Each account keeps its own broker identifiers, history, rules, and sync status. Combined
+            views aggregate only the selected demo-account data.
+          </p>
+        </section>
+      </main>
+    </div>
+    <dialog id="connectDialog">
+      <div class="modal-head">
+        <div>
+          <b>Connect an MT5 demo account</b>
+          <div class="caption">Read-only connection setup</div>
+        </div>
+        <button class="x" onclick="connectDialog.close()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice">
+          <span>ⓘ</span>
+          <div>
+            <strong>Demo accounts only.</strong> Never share your MT5 password with PaperLogix.
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Open and sign in to your demo account in the MT5 desktop terminal.</li>
+          <li>Run the local PaperLogix connector from the same computer.</li>
+          <li>
+            Approve the displayed account identifier and data fields, then start the first sync.
+          </li>
+        </ol>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="connectDialog.close()">Cancel</button
+        ><button
+          class="btn primary"
+          onclick="
+            connectDialog.close();
+            showToast('Connector setup is ready. Keep MT5 open for your first sync.');
+          "
+        >
+          I understand
+        </button>
+      </div>
+    </dialog>
+    <dialog id="reflectionDialog">
+      <div class="modal-head">
+        <div>
+          <b>Post-trade reflection</b>
+          <div class="caption">Attach this after an MT5 trade syncs.</div>
+        </div>
+        <button class="x" onclick="reflectionDialog.close()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>How did you feel?</label>
+          <div class="checks" id="emotions">
+            <button class="check" type="button">Calm</button
+            ><button class="check" type="button">Anxious</button
+            ><button class="check" type="button">FOMO</button
+            ><button class="check" type="button">Frustrated</button>
+          </div>
+        </div>
+        <div class="field" style="margin-top: 15px">
+          <label>Lesson learned</label
+          ><textarea placeholder="What would you repeat or change next time?"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="reflectionDialog.close()">Cancel</button
+        ><button
+          class="btn primary"
+          onclick="
+            reflectionDialog.close();
+            showToast('Reflection saved. It will be linked after your next sync.');
+          "
+        >
+          Save reflection
+        </button>
+      </div>
+    </dialog>
+    <div
+      id="toast"
+      style="
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #29233f;
+        border: 1px solid #6753a1;
+        color: #f3efff;
+        border-radius: 10px;
+        padding: 12px 15px;
+        box-shadow: var(--shadow);
+        font-size: 13px;
+        transform: translateY(90px);
+        opacity: 0;
+        transition: 0.22s;
+        z-index: 5;
+      "
+    ></div>
+    <script src="app.js"></script>
+  </body>
+</html>
