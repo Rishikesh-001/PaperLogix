@@ -651,6 +651,21 @@ document.getElementById('authForm').addEventListener('submit', async (event) => 
     submit.disabled = false;
   }
 });
+document.querySelectorAll('.password-toggle').forEach((button) => {
+  button.addEventListener('click', () => {
+    const wrapper = button.closest('.password-wrapper');
+    const input = wrapper?.querySelector('input');
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    const showIcon = button.querySelector('.eye-show');
+    const hideIcon = button.querySelector('.eye-hide');
+    if (showIcon) showIcon.style.display = isPassword ? 'none' : 'block';
+    if (hideIcon) hideIcon.style.display = isPassword ? 'block' : 'none';
+    button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    button.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+  });
+});
 document.getElementById('authModeToggle').addEventListener('click', () => {
   authMode = authMode === 'signIn' ? 'signUp' : 'signIn';
   document.getElementById('authHeading').textContent =
@@ -661,6 +676,17 @@ document.getElementById('authModeToggle').addEventListener('click', () => {
     authMode === 'signIn' ? 'Need an account? Create one' : 'Already have an account? Sign in';
   document.getElementById('authPassword').autocomplete =
     authMode === 'signIn' ? 'current-password' : 'new-password';
+  const authToggle = document.getElementById('authPasswordToggle');
+  const authPass = document.getElementById('authPassword');
+  if (authPass && authPass.type === 'text' && authToggle) {
+    authPass.type = 'password';
+    const showIcon = authToggle.querySelector('.eye-show');
+    const hideIcon = authToggle.querySelector('.eye-hide');
+    if (showIcon) showIcon.style.display = 'block';
+    if (hideIcon) hideIcon.style.display = 'none';
+    authToggle.setAttribute('aria-label', 'Show password');
+    authToggle.setAttribute('title', 'Show password');
+  }
   showFormMessage(document.getElementById('authMessage'), '');
 });
 async function initializeAuthentication() {

@@ -81,6 +81,40 @@ body.auth-required .auth-screen {
   font-size: 13px;
   cursor: pointer;
 }
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.password-wrapper .input,
+.password-wrapper input {
+  width: 100%;
+  padding-right: 42px !important;
+}
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c859f;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+.password-toggle svg {
+  display: block;
+}
 .form-message {
   min-height: 1.4em;
   color: var(--muted);
