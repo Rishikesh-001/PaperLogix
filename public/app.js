@@ -628,6 +628,14 @@ async function initializeAuthentication() {
     const response = await fetch('/api/config');
     if (!response.ok) throw new Error('PaperLogix backend is unavailable.');
     const config = await response.json();
+    if (!config.configured) {
+      const missing = config.missingEnvironment?.length
+        ? ` Missing or invalid: ${config.missingEnvironment.join(', ')}.`
+        : '';
+      throw new Error(
+        `PaperLogix server configuration is incomplete. Add the required environment variables in Vercel Project Settings → Environment Variables, then redeploy.${missing}`,
+      );
+    }
     if (!window.supabase?.createClient) {
       throw new Error('Could not load the sign-in service. Check your connection and reload.');
     }

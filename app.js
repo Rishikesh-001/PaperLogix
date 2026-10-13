@@ -13,23 +13,26 @@ const requiredEnvironment = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'METAAPI_TOKEN',
 ];
-const missingEnvironment = requiredEnvironment.filter((name) => !process.env[name]);
-
-if (missingEnvironment.length) {
-  throw new Error(`Missing required environment variables: ${missingEnvironment.join(', ')}`);
+const missingEnvironment = requiredEnvironment.filter((name) => !process.env[name]?.trim());
+let supabaseOrigin = null;
+if (process.env.SUPABASE_URL) {
+  try {
+    supabaseOrigin = new URL(process.env.SUPABASE_URL).origin;
+  } catch {
+    missingEnvironment.push('SUPABASE_URL (must be a valid URL)');
+  }
 }
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  },
-);
-const metaApi = new MetaApi(process.env.METAAPI_TOKEN);
+const configurationReady = missingEnvironment.length === 0;
+const supabaseAdmin = configurationReady
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : null;
+const metaApi = configurationReady ? new MetaApi(process.env.METAAPI_TOKEN) : null;
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const frontendDirectory = path.join(__dirname, 'public');
@@ -42,7 +45,7 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         baseUri: ["'self'"],
-        connectSrc: ["'self'", new URL(process.env.SUPABASE_URL).origin],
+        connectSrc: ["'self'", ...(supabaseOrigin ? [supabaseOrigin] : [])],
         fontSrc: ["'self'", 'https:', 'data:'],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
@@ -66,6 +69,17 @@ const connectLimiter = rateLimit({
 
 function sendError(res, status, message) {
   return res.status(status).json({ error: message });
+}
+
+function requireConfiguration(_req, res, next) {
+  if (!configurationReady) {
+    return sendError(
+      res,
+      503,
+      'PaperLogix backend configuration is incomplete. Check the required Vercel environment variables.',
+    );
+  }
+  return next();
 }
 
 function asyncRoute(handler) {
@@ -234,15 +248,18 @@ app.get('/api/config', (_req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    configured: configurationReady,
+    missingEnvironment,
   });
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, configured: configurationReady });
 });
 
 app.get(
   '/api/mt5/accounts',
+  requireConfiguration,
   requireUser,
   asyncRoute(async (req, res) => {
     const { data, error } = await supabaseAdmin
@@ -258,6 +275,7 @@ app.get(
 
 app.post(
   '/api/mt5/accounts',
+  requireConfiguration,
   requireUser,
   connectLimiter,
   asyncRoute(async (req, res) => {
@@ -335,6 +353,7 @@ app.post(
 
 app.post(
   '/api/mt5/accounts/:id/sync',
+  requireConfiguration,
   requireUser,
   asyncRoute(async (req, res) => {
     const account = await findOwnedAccount(req.user.id, req.params.id);
@@ -355,6 +374,7 @@ app.post(
 
 app.delete(
   '/api/mt5/accounts/:id',
+  requireConfiguration,
   requireUser,
   asyncRoute(async (req, res) => {
     const account = await findOwnedAccount(req.user.id, req.params.id);

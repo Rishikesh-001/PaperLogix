@@ -127,7 +127,8 @@ Keep `.env` private; `.env` files are excluded from Git.
 
 Check the Vercel deployment and function logs. Visit `/api/health` to verify that the Express
 function is running, and confirm all four server environment variables are set for the deployment
-environment.
+environment. If configuration is missing, the page should still load and identify the missing
+variables; add them in Vercel Project Settings and redeploy.
 
 **PaperLogix cannot sign in**
 
