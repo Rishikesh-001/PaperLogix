@@ -4,8 +4,6 @@ const path = require('node:path');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { createClient } = require('@supabase/supabase-js');
-const MetaApi = require('metaapi.cloud-sdk').default;
 
 const requiredEnvironment = [
   'SUPABASE_URL',
@@ -24,15 +22,33 @@ if (process.env.SUPABASE_URL) {
 }
 
 const configurationReady = missingEnvironment.length === 0;
-const supabaseAdmin = configurationReady
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+let supabaseAdmin;
+let metaApi;
+let integrationInitializationFailed = false;
+
+function initializeIntegrations() {
+  if (!configurationReady || integrationInitializationFailed) return false;
+  if (supabaseAdmin && metaApi) return true;
+
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const MetaApi = require('metaapi.cloud-sdk').default;
+
+    supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
-    })
-  : null;
-const metaApi = configurationReady ? new MetaApi(process.env.METAAPI_TOKEN) : null;
+    });
+    metaApi = new MetaApi(process.env.METAAPI_TOKEN);
+    return true;
+  } catch (error) {
+    integrationInitializationFailed = true;
+    console.error('PaperLogix integration initialization failed', { name: error.name });
+    return false;
+  }
+}
+
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const frontendDirectory = path.join(__dirname, 'public');
@@ -77,6 +93,13 @@ function requireConfiguration(_req, res, next) {
       res,
       503,
       'PaperLogix backend configuration is incomplete. Check the required Vercel environment variables.',
+    );
+  }
+  if (!initializeIntegrations()) {
+    return sendError(
+      res,
+      503,
+      'PaperLogix integrations could not initialize. Check the Vercel Node.js runtime and function logs.',
     );
   }
   return next();
@@ -245,16 +268,24 @@ async function findOwnedAccount(userId, accountId) {
 }
 
 app.get('/api/config', (_req, res) => {
+  const integrationsAvailable = initializeIntegrations();
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    configured: configurationReady,
+    configured: configurationReady && integrationsAvailable,
     missingEnvironment,
+    integrationError:
+      configurationReady && !integrationsAvailable
+        ? 'Server integrations could not initialize. Check the Vercel Node.js runtime and function logs.'
+        : null,
   });
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, configured: configurationReady });
+  res.json({
+    ok: true,
+    configured: configurationReady && initializeIntegrations(),
+  });
 });
 
 app.get(

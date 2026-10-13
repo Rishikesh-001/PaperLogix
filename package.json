@@ -4,7 +4,7 @@
   "private": true,
   "description": "PaperLogix demo trading journal with a MetaApi connection",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "start": "node app.js",

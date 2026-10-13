@@ -94,8 +94,8 @@ values. The app does not expose trade-placement API routes.
 
 ## Local development
 
-Node.js 20 or later is required. The browser-only app cannot safely connect to MetaApi because the
-MetaApi token must remain server-side.
+Node.js 22 is required. The browser-only app cannot safely connect to MetaApi because the MetaApi
+token must remain server-side.
 
 1. Copy `.env.example` to `.env` and fill in the Supabase and MetaApi values.
 2. Run the SQL schema in your Supabase project as described above.
