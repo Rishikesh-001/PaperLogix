@@ -566,6 +566,9 @@ async function connectMetaApiAccount(event) {
       Boolean(result.syncWarning),
     );
     showToast(result.syncWarning || 'MetaQuotes-Demo account connected and history synced.');
+    if (result.syncPending && !(await syncAccount(result.account.id, true))) {
+      showToast('Account connected, but the first history sync is still pending. Retry with Sync now.');
+    }
   } catch (error) {
     showFormMessage(message, error.message, true);
   } finally {

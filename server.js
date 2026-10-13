@@ -32,7 +32,7 @@ const supabaseAdmin = createClient(
 const metaApi = new MetaApi(process.env.METAAPI_TOKEN);
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const frontendDirectory = __dirname;
+const frontendDirectory = path.join(__dirname, 'public');
 const allowedMt5Server = 'MetaQuotes-Demo';
 
 app.disable('x-powered-by');
@@ -147,7 +147,7 @@ async function syncMetaApiAccount(accountRow) {
 
   try {
     await connection.connect();
-    await connection.waitSynchronized();
+    await connection.waitSynchronized(40);
     const [accountInformation, deals] = await Promise.all([
       connection.getAccountInformation(),
       connection.getDealsByTimeRange(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), new Date()),
@@ -290,7 +290,6 @@ app.post(
         magic: 1,
       });
       await providerAccount.deploy();
-      await providerAccount.waitConnected();
 
       const { data, error } = await supabaseAdmin
         .from('paperlogix_mt5_accounts')
@@ -310,16 +309,12 @@ app.post(
 
       if (error) throw error;
 
-      let syncResult = { account: toPublicAccount(data), trades: [] };
-      let syncWarning = null;
-      try {
-        syncResult = await syncMetaApiAccount(data);
-      } catch (error) {
-        syncWarning = 'Account connected, but its first history sync failed. Try syncing again.';
-        console.error('Initial MetaApi history sync failed', { name: error.name });
-      }
-
-      return res.status(201).json({ ...syncResult, syncWarning });
+      return res.status(201).json({
+        account: toPublicAccount(data),
+        trades: [],
+        syncPending: true,
+        syncWarning: 'Account connected. Starting the first history sync now.',
+      });
     } catch (error) {
       if (providerAccount) {
         try {
@@ -406,6 +401,10 @@ app.use((error, req, res, _next) => {
   return sendError(res, 500, 'PaperLogix could not complete the request. Please try again.');
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`PaperLogix listening on port ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`PaperLogix listening on port ${port}`);
+  });
+}
+
+module.exports = app;
