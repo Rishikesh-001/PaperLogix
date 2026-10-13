@@ -1,105 +1,145 @@
 # PaperLogix
 
-> A demo-only trading journal for reviewing decisions, tracking habits, and learning from your MT5
-> trade history.
+> A private demo-trading journal for reviewing MT5 history, decisions, and practice habits.
 
-PaperLogix is a lightweight browser-based practice dashboard. Connect a running MetaTrader 5 desktop
-terminal through the optional local Python connector to review closed demo deals alongside your
-plans and reflections.
+PaperLogix connects to **MetaQuotes-Demo** through MetaApi. Sign in to PaperLogix, connect your
+MT5 account with its investor (read-only) password, and PaperLogix syncs up to 90 days of closed
+trade history when you connect and when you next sign in.
 
-**Demo accounts only. Read-only. PaperLogix never places or modifies trades.**
+**No MT5 terminal, Python package, EA, or Windows service is required on the user's computer.**
+PaperLogix's Node.js backend runs on Render; Supabase provides user authentication and storage.
 
 ## Features
 
-- Review trade history, demo performance, reports, and process metrics.
-- Filter the dashboard by demo account or view accounts together.
-- Create practice plans, record reflections, and review strategy templates.
-- Step through a simple trade replay exercise.
-- Import up to 90 days of closed buy/sell deals from the active MT5 terminal.
-- Keep the connector bound to your own computer at `127.0.0.1`.
+- Individual PaperLogix sign-in and account-specific MT5 data.
+- MetaQuotes-Demo account connection using an investor password.
+- Automatic history sync on sign-in, plus manual sync.
+- Demo-account dashboard, trade history, metrics, reports, journal, and replay views.
+- Account removal that also removes the MetaApi connection and imported PaperLogix history.
+- Per-user account ownership and row-level access rules in Supabase.
 
-> The frontend is a prototype. Several views contain illustrative or placeholder content, and
-> browser session data is not stored between reloads.
+> PaperLogix is a learning prototype. Some analytics, reports, and coach content are illustrative.
+> Demo results do not predict future performance and are not financial advice.
 
-## Getting started
+## How the connection works
 
-### Requirements
-
-- Windows
-- MetaTrader 5 desktop terminal, open and signed in to a broker-provided **demo** account
-- Python 3.10 or later
-- The official `MetaTrader5` Python package
-
-### 1. Install the MT5 Python package
-
-Open PowerShell in this project folder and run:
-
-```powershell
-py -m pip install MetaTrader5
+```text
+Browser
+  ├─ Supabase Auth (PaperLogix user sign-in)
+  └─ PaperLogix Node.js API on Render
+       ├─ verifies the signed-in user
+       ├─ stores account ownership and imported deals in Supabase
+       └─ connects to MetaApi using a server-only API token
+             └─ MetaQuotes-Demo account
 ```
 
-### 2. Start the local connector
+The MT5 investor password is sent from the browser to the PaperLogix backend over HTTPS and then
+to MetaApi to establish its cloud connection. PaperLogix does not write that password to its
+database. MetaApi is a third-party service and handles the credentials needed for its connection;
+review its current security and privacy terms before connecting. Use an investor/read-only password
+only, and never connect a live account.
 
-Keep MT5 open and signed in to your demo account. In the same folder, run:
+## Deploying PaperLogix
 
-```powershell
-py mt5_connector.py
-```
+### 1. Create a Supabase project
 
-The connector listens on `http://127.0.0.1:8766`. Leave this terminal window open while using the
-integration.
+1. Create a project at [supabase.com](https://supabase.com/).
+2. Open **SQL Editor** and run the contents of [`supabase-schema.sql`](./supabase-schema.sql).
+3. In **Authentication → URL Configuration**, set the site URL to your deployed PaperLogix URL.
+   Add that URL to the allowed redirect URLs.
+4. In **Project Settings → API**, note the project URL, publishable/anon key, and service-role key.
+   The service-role key is secret and belongs only in Render's environment variables.
 
-### 3. Open PaperLogix
+### 2. Create a MetaApi token
 
-Open `index.html` in a browser. Go to **MT5 connection**, choose **Connect local MT5 demo**, and
-confirm that the active terminal account is a demo account before importing its history.
+Create a MetaApi account and generate an API token in its dashboard. Check MetaApi's current plan,
+trial, and account/server support before proceeding; availability and pricing can change. Do not
+put the token in the frontend or commit it to this repository.
 
-Stop the connector with **Ctrl+C** when you are finished.
+### 3. Deploy the Node.js service to Render
 
-## What gets imported
+1. Push this repository to your Git provider and create a Render service from the repository.
+2. Use the included [`render.yaml`](./render.yaml) Blueprint, or configure a Node web service with:
+   - Build command: `npm install`
+   - Start command: `npm start`
+3. Set these environment variables in Render:
 
-The connector reads the active terminal's account summary and closed buy/sell exit deals from the
-last 90 days. Deal records include the symbol, direction, volume, close time, and realised profit
-after available swap, commission, and fee values.
+   | Variable | Value |
+   | --- | --- |
+   | `NODE_ENV` | `production` |
+   | `SUPABASE_URL` | Your Supabase project URL |
+   | `SUPABASE_ANON_KEY` | Your Supabase publishable/anon key |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service-role key (**secret**) |
+   | `METAAPI_TOKEN` | Your MetaApi token (**secret**) |
 
-Only data exposed by the active MT5 terminal can be imported. Unsupported or unavailable information
-is not inferred. The connector does not request or store your MT5 password.
+4. Wait for the deploy to finish, then open the Render URL and create a PaperLogix account.
+5. In PaperLogix, go to **MT5 connection**, enter your numeric MetaQuotes-Demo login and
+   investor password, confirm the demo account, and connect.
 
-## Privacy and safety
+The first MetaApi connection can take a few minutes while its cloud terminal starts and synchronizes.
+Afterward, signing in to PaperLogix starts a history sync for each linked account.
 
-- Use a broker-provided **demo account** only.
-- The connector binds to `127.0.0.1`; it is not intended to be exposed to your network or the public
-  internet.
-- The connection is read-only: it does not place, modify, or close orders.
-- Review your browser and connector environment before importing account data.
-- This project is for educational practice, not financial advice. Demo results do not predict future
-  performance.
+## MT5 account requirements
+
+- The server name must be exactly `MetaQuotes-Demo`.
+- Enter the account's investor/read-only password only. PaperLogix cannot independently verify
+  that the password has investor-only permissions; never enter a master password.
+- Confirm that the account is a demo account before connecting.
+- MetaApi must support the account and permit the required history access.
+
+PaperLogix imports closed buy/sell exit deals from the preceding 90 days. It stores deal identifiers,
+symbol, direction, volume, close time, and realised profit after available commission, swap, and
+fee values. It does not expose trade-placement API routes.
+
+## Local development
+
+Node.js 20 or later is needed to run the backend locally. The browser UI by itself cannot safely
+connect to MetaApi because the MetaApi token must stay on a server.
+
+1. Copy `.env.example` to `.env` and fill in the Supabase and MetaApi values.
+2. Run the SQL schema in your Supabase project as described above.
+3. Install dependencies and start the web server:
+
+   ```sh
+   npm install
+   npm start
+   ```
+
+4. Open `http://localhost:3000`.
+
+Keep `.env` private. `.env` files are excluded from Git by `.gitignore`.
 
 ## Project structure
 
-| File               | Purpose                                          |
-| ------------------ | ------------------------------------------------ |
-| `index.html`       | Application page structure                       |
-| `styles.css`       | Layout, theme, and responsive styling            |
-| `app.js`           | Browser interactions and local MT5 sync          |
-| `mt5_connector.py` | Local HTTP connector for the active MT5 terminal |
+| File | Purpose |
+| --- | --- |
+| `index.html` | App pages, PaperLogix sign-in, and MT5 connection form |
+| `styles.css` | Theme, layout, and responsive styling |
+| `app.js` | Supabase sign-in and browser interactions |
+| `server.js` | Authenticated Node API and MetaApi integration |
+| `supabase-schema.sql` | Per-user account and deal tables with row-level security |
+| `render.yaml` | Render web-service configuration |
+| `.env.example` | Required server environment-variable names |
 
 ## Troubleshooting
 
-**The connector reports that MetaTrader5 is not installed**
+**The app says the backend is unavailable**
 
-Install the package in the Python environment used to start the connector:
+Open the deployed Render URL, not the HTML file directly. Check the Render service health endpoint
+at `/api/health` and confirm all required environment variables are set.
 
-```powershell
-py -m pip install MetaTrader5
-```
+**PaperLogix cannot sign in or create an account**
 
-**The terminal is unavailable**
+Check that Supabase email/password authentication is enabled, the Supabase URL and anon key are
+correct, and the deployed URL is listed in Supabase's Auth URL configuration.
 
-Open MT5, sign in to a demo account, and try again. The connector must run on the same Windows
-computer as the active terminal.
+**The MT5 account cannot connect**
 
-**The page cannot reach the connector**
+Confirm the server is `MetaQuotes-Demo`, the investor password is correct, and the account supports
+MetaApi access. Check Render logs for the request failure; credentials are intentionally omitted
+from those logs.
 
-Check that `py mt5_connector.py` is still running and listening on port `8766`, then retry the
-connection from PaperLogix.
+**A linked account does not sync**
+
+Use **Sync now** in PaperLogix. The MetaApi cloud terminal must be connected and synchronized, and
+the selected MetaApi plan must allow the account and history access.

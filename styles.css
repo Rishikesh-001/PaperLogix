@@ -29,6 +29,86 @@ body {
     sans-serif;
   font-size: 15px;
 }
+body.auth-required .app {
+  display: none;
+}
+.auth-screen {
+  display: none;
+  min-height: 100vh;
+  padding: 24px;
+  align-items: center;
+  justify-content: center;
+}
+body.auth-required .auth-screen {
+  display: flex;
+}
+.auth-card {
+  width: min(100%, 440px);
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.auth-brand {
+  padding: 0;
+  margin-bottom: 30px;
+}
+.auth-card h1 {
+  margin: 8px 0;
+  font-size: 28px;
+}
+.auth-card .sub {
+  margin-bottom: 22px;
+}
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+.auth-form .input,
+.account-connect-form .input {
+  width: 100%;
+}
+.auth-form > .btn {
+  width: 100%;
+}
+.auth-switch {
+  margin-top: 18px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #c8b9ff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.form-message {
+  min-height: 1.4em;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.form-message.error {
+  color: var(--red);
+}
+.account-connect-form {
+  margin-top: 18px;
+}
+.demo-confirm {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.demo-confirm input {
+  margin: 3px 0 0;
+  accent-color: var(--violet);
+}
+.side-bottom {
+  display: grid;
+  gap: 6px;
+}
 button,
 input,
 select,

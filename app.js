@@ -3,7 +3,22 @@ const accounts = [];
 trades.forEach((trade, index) => (trade.account = index < 5 ? 'alpha' : 'beta'));
 let activeAccount = 'all';
 const rules = [];
+let supabaseClient;
+let currentSession;
+let authMode = 'signIn';
+let activeUserId;
 const fmt = (n) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (character) => {
+    const entities = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
 const scopeTrades = () =>
   activeAccount === 'all' ? trades : trades.filter((t) => t.account === activeAccount);
 function updateAccountOptions() {
@@ -23,7 +38,12 @@ function updateAccountOptions() {
     if (!select) return;
     select.innerHTML =
       '<option value="all">All demo accounts</option>' +
-      accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('');
+      accounts
+        .map(
+          (account) =>
+            `<option value="${escapeHtml(account.id)}">${escapeHtml(account.name)}</option>`,
+        )
+        .join('');
     select.value = activeAccount;
   });
 }
@@ -34,10 +54,10 @@ function renderAccounts() {
     ? accounts
         .map(
           (a) =>
-            `<div class="rule-row"><div class="rule-top"><span>${a.name} <span class="status connected">DEMO</span></span><div class="account-actions"><button class="btn small account-select" data-account="${a.id}">${activeAccount === a.id ? 'Selected' : 'View account'}</button><button class="btn small danger account-delete" data-account="${a.id}" aria-label="Delete ${a.name}">Delete</button></div></div><div class="rule-detail">${a.server} · Balance $${a.balance.toFixed(2)} · Synced ${a.lastSync}</div></div>`,
+            `<div class="rule-row"><div class="rule-top"><span>${escapeHtml(a.name)} <span class="status connected">DEMO</span></span><div class="account-actions"><button class="btn small account-select" data-account="${escapeHtml(a.id)}">${activeAccount === a.id ? 'Selected' : 'View account'}</button><button class="btn small danger account-delete" data-account="${escapeHtml(a.id)}" aria-label="Delete ${escapeHtml(a.name)}">Delete</button></div></div><div class="rule-detail">${escapeHtml(a.server)} · Balance $${Number(a.balance).toFixed(2)} ${escapeHtml(a.currency || '')} · Synced ${escapeHtml(a.lastSync)}</div></div>`,
         )
         .join('')
-    : '<div class="empty"><div class="empty-icon">◉</div><b>No MT5 demo accounts connected</b>Add an account, then use the local connector to import its first history.</div>';
+    : '<div class="empty"><div class="empty-icon">◉</div><b>No MT5 demo accounts connected</b>Connect your MetaQuotes-Demo account to import its history.</div>';
   document.getElementById('accountCount').textContent = `${accounts.length} connected`;
   document
     .querySelectorAll('.account-select')
@@ -46,17 +66,93 @@ function renderAccounts() {
     .querySelectorAll('.account-delete')
     .forEach((b) => b.addEventListener('click', () => deleteAccount(b.dataset.account)));
 }
-function deleteAccount(id) {
+function renderConnectionDetails() {
+  const container = document.getElementById('connectedAccountDetails');
+  if (!container) return;
+
+  const account = accounts.find((item) => item.id === activeAccount) || accounts[0];
+  if (!account) {
+    container.innerHTML =
+      '<div class="empty connection-empty"><b>No demo account connected</b>Connect your MetaQuotes-Demo account to sync trade history.</div>';
+    return;
+  }
+
+  const lastSync =
+    account.lastSync === 'Not synced'
+      ? account.lastSync
+      : new Date(account.lastSync).toLocaleString();
+  container.innerHTML = `
+    <div class="connected-account">
+      <div class="rule-row"><div class="rule-top"><span>Connected account</span><span class="status connected">DEMO</span></div></div>
+      <div class="rule-row"><div class="rule-top"><span>Login</span><span>••••${escapeHtml(account.loginSuffix || account.name.slice(-4))}</span></div></div>
+      <div class="rule-row"><div class="rule-top"><span>Server</span><span>${escapeHtml(account.server)}</span></div></div>
+      <div class="rule-row"><div class="rule-top"><span>Balance</span><span>${escapeHtml(account.currency || 'USD')} ${Number(account.balance).toFixed(2)}</span></div></div>
+      <div class="rule-row"><div class="rule-top"><span>Last sync</span><span>${escapeHtml(lastSync)}</span></div></div>
+      <button class="btn small connection-sync" data-account="${escapeHtml(account.id)}" type="button">↻ Sync now</button>
+    </div>`;
+  container
+    .querySelector('.connection-sync')
+    .addEventListener('click', () => syncAccount(account.id));
+}
+async function syncAccount(id, quiet = false) {
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) syncStatus.textContent = 'Syncing demo history…';
+  try {
+    const result = await apiRequest(`/api/mt5/accounts/${encodeURIComponent(id)}/sync`, {
+      method: 'POST',
+    });
+    const accountIndex = accounts.findIndex((account) => account.id === id);
+    if (accountIndex !== -1) accounts[accountIndex] = result.account;
+    trades.splice(
+      0,
+      trades.length,
+      ...trades.filter((trade) => trade.account !== id),
+      ...result.trades,
+    );
+    renderAccounts();
+    renderTrades();
+    renderConnectionDetails();
+    if (syncStatus) syncStatus.textContent = `MT5 demo synced ${new Date().toLocaleTimeString()}`;
+    if (!quiet) showToast(`Synced ${result.trades.length} closed demo deals.`);
+    return true;
+  } catch (error) {
+    if (syncStatus) syncStatus.textContent = 'Could not sync MT5 demo history';
+    if (!quiet) showToast(error.message);
+    return false;
+  }
+}
+async function syncSelectedAccounts() {
+  if (!accounts.length) {
+    showPage('connection');
+    showToast('Connect your MetaQuotes-Demo account first.');
+    return;
+  }
+
+  const selectedAccounts =
+    activeAccount === 'all' ? accounts : accounts.filter((account) => account.id === activeAccount);
+  for (const account of selectedAccounts) {
+    await syncAccount(account.id, true);
+  }
+  showToast('Demo account sync finished.');
+}
+async function deleteAccount(id) {
   const accountIndex = accounts.findIndex((account) => account.id === id);
   if (accountIndex === -1) return;
 
   const account = accounts[accountIndex];
   if (
     !window.confirm(
-      `Delete demo account "${account.name}" and its synced trades from this session?`,
+      `Disconnect "${account.name}" from PaperLogix and remove its MetaApi cloud connection and synced history?`,
     )
   )
     return;
+
+  try {
+    await apiRequest(`/api/mt5/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  } catch (error) {
+    showToast(error.message);
+    return;
+  }
 
   accounts.splice(accountIndex, 1);
   trades.splice(0, trades.length, ...trades.filter((trade) => trade.account !== id));
@@ -66,9 +162,13 @@ function deleteAccount(id) {
   updateAccountOptions();
   renderAccounts();
   renderTrades();
-  showToast(`Deleted demo account ${account.name}.`);
+  renderConnectionDetails();
+  showToast(`Disconnected demo account ${account.name}.`);
 }
 function setAccount(id) {
+  if (id !== 'all' && !accounts.some((account) => account.id === id)) {
+    id = 'all';
+  }
   activeAccount = id;
   updateAccountOptions();
   renderAccounts();
@@ -120,7 +220,7 @@ function updateScopedMetrics() {
   }
 }
 const row = (t) =>
-  `<tr><td><div class="symbol">${t.symbol}</div><div class="trade-meta">${t.date} · ${t.id}</div></td><td>${t.side}<div class="trade-meta">${t.volume}</div></td><td class="${t.pnl >= 0 ? 'positive' : 'negative'}"><b>${fmt(t.pnl)}</b></td><td><span class="tag">${t.setup}</span></td><td><span class="tag ${t.status === 'ok' ? 'ok' : 'flag'}">${t.status === 'ok' ? '✓ In plan' : '! Review'}</span></td></tr>`;
+  `<tr><td><div class="symbol">${escapeHtml(t.symbol)}</div><div class="trade-meta">${escapeHtml(t.date)} · ${escapeHtml(t.id)}</div></td><td>${escapeHtml(t.side)}<div class="trade-meta">${escapeHtml(t.volume)}</div></td><td class="${t.pnl >= 0 ? 'positive' : 'negative'}"><b>${fmt(Number(t.pnl))}</b></td><td><span class="tag">${escapeHtml(t.setup)}</span></td><td><span class="tag ${t.status === 'ok' ? 'ok' : 'flag'}">${t.status === 'ok' ? '✓ In plan' : '! Review'}</span></td></tr>`;
 function renderTrades() {
   const scoped = scopeTrades();
   document.getElementById('recentTrades').innerHTML =
@@ -128,7 +228,7 @@ function renderTrades() {
       .slice(0, 4)
       .map(
         (t) =>
-          `<tr><td><div class="symbol">${t.symbol}</div><div class="trade-meta">${t.side} · ${t.date}</div></td><td class="${t.pnl >= 0 ? 'positive' : 'negative'}"><b>${fmt(t.pnl)}</b></td><td><span class="tag">${t.setup}</span></td><td><span class="tag ${t.status === 'ok' ? 'ok' : 'flag'}">${t.status === 'ok' ? '✓ In plan' : '! Review'}</span></td></tr>`,
+          `<tr><td><div class="symbol">${escapeHtml(t.symbol)}</div><div class="trade-meta">${escapeHtml(t.side)} · ${escapeHtml(t.date)}</div></td><td class="${t.pnl >= 0 ? 'positive' : 'negative'}"><b>${fmt(Number(t.pnl))}</b></td><td><span class="tag">${escapeHtml(t.setup)}</span></td><td><span class="tag ${t.status === 'ok' ? 'ok' : 'flag'}">${t.status === 'ok' ? '✓ In plan' : '! Review'}</span></td></tr>`,
       )
       .join('') ||
     '<tr><td colspan="4" class="empty">No synced trades for this account yet.</td></tr>';
@@ -138,10 +238,16 @@ function renderTrades() {
     ? rules
         .map(
           (r, i) =>
-            `<div class="rule-row"><div class="rule-top"><span>${r[0]}</span><button class="btn small" onclick="showToast('Rule editor is ready for ${r[0].toLowerCase()}.')">Edit</button></div><div class="rule-detail"><b style="color:#ddd7eb">${r[1]}</b> · ${r[2]}</div></div>`,
+            `<div class="rule-row"><div class="rule-top"><span>${escapeHtml(r[0])}</span><button class="btn small rule-edit" data-rule-index="${i}" type="button">Edit</button></div><div class="rule-detail"><b style="color:#ddd7eb">${escapeHtml(r[1])}</b> · ${escapeHtml(r[2])}</div></div>`,
         )
         .join('')
     : '<div class="empty"><b>No active rules yet</b>Add your first risk or process rule to begin tracking adherence.</div>';
+  document.querySelectorAll('.rule-edit').forEach((button) => {
+    button.addEventListener('click', () => {
+      const rule = rules[Number(button.dataset.ruleIndex)];
+      if (rule) showToast(`Rule editor is ready for ${rule[0].toLowerCase()}.`);
+    });
+  });
 }
 function filterHistory() {
   const q = (document.getElementById('tradeSearch')?.value || '').toLowerCase(),
@@ -244,11 +350,7 @@ document
   .forEach((e) => e.addEventListener('input', filterHistory));
 document
   .querySelectorAll('#syncBtn,#historySync,#connectionSync')
-  .forEach((b) =>
-    b.addEventListener('click', () =>
-      showToast('Sync started. MT5 data will refresh after records are processed.'),
-    ),
-  );
+  .forEach((b) => b.addEventListener('click', syncSelectedAccounts));
 document
   .getElementById('analyticsRange')
   .addEventListener('click', () =>
@@ -305,7 +407,17 @@ document.getElementById('journalForm').addEventListener('submit', (e) => {
 });
 document
   .getElementById('reflectionBtn')
-  .addEventListener('click', () => reflectionDialog.showModal());
+  .addEventListener('click', () => document.getElementById('reflectionDialog').showModal());
+document.getElementById('reflectionClose').addEventListener('click', () => {
+  document.getElementById('reflectionDialog').close();
+});
+document.getElementById('reflectionCancel').addEventListener('click', () => {
+  document.getElementById('reflectionDialog').close();
+});
+document.getElementById('reflectionSave').addEventListener('click', () => {
+  document.getElementById('reflectionDialog').close();
+  showToast('Reflection saved. It will be linked after your next sync.');
+});
 document
   .querySelectorAll('.check')
   .forEach((b) => b.addEventListener('click', () => b.classList.toggle('selected')));
@@ -330,11 +442,6 @@ document
   .getElementById('addRule')
   .addEventListener('click', () =>
     showToast('Rule builder: start with a simple limit you can follow consistently.'),
-  );
-document
-  .getElementById('disconnectBtn')
-  .addEventListener('click', () =>
-    showToast('Disconnect requires confirmation in a production account flow.'),
   );
 document
   .getElementById('deleteData')
@@ -363,78 +470,203 @@ function resetSeededContent() {
   document
     .querySelectorAll('#progress .metric .hint')
     .forEach((el) => (el.textContent = 'No practice data yet'));
-  document.querySelector('#connection .two-col').innerHTML =
-    '<div class="card empty"><div class="empty-icon">◉</div><b>No demo account connected</b>Use Demo accounts to add your first read-only MT5 demo connection.</div>';
 }
-async function connectLocalMt5() {
-  const button = document.getElementById('connectLocalMt5');
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Checking MT5…';
-  }
+async function apiRequest(url, options = {}) {
+  if (!currentSession?.access_token) throw new Error('Sign in to PaperLogix to continue.');
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      Authorization: `Bearer ${currentSession.access_token}`,
+      ...options.headers,
+    },
+  });
+  const result = response.status === 204 ? {} : await response.json();
+  if (!response.ok) throw new Error(result.error || 'PaperLogix could not complete the request.');
+  return result;
+}
+function showFormMessage(element, message, isError = false) {
+  element.textContent = message;
+  element.classList.toggle('error', isError);
+}
+async function loadUserAccounts() {
   try {
-    const health = await fetch('http://127.0.0.1:8766/health');
-    const healthData = await health.json();
-    if (!health.ok) throw new Error(healthData.error || 'Local MT5 connector is unavailable.');
-    if (
-      !confirm(
-        'Confirm that the active MT5 terminal account is a DEMO account. PaperLogix will import read-only account and closed-deal data.',
-      )
-    )
-      throw new Error('Demo-account confirmation is required before importing.');
-    if (button) button.textContent = 'Importing demo history…';
-    const response = await fetch('http://127.0.0.1:8766/sync', { method: 'POST' });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Sync failed.');
-    const idx = accounts.findIndex((a) => a.id === data.account.id);
-    data.account.demoConfirmed = true;
-    if (idx >= 0) accounts[idx] = data.account;
-    else accounts.push(data.account);
-    trades.splice(
-      0,
-      trades.length,
-      ...data.trades.map((t) => ({ ...t, account: data.account.id })),
-    );
-    activeAccount = data.account.id;
+    const result = await apiRequest('/api/mt5/accounts');
+    accounts.splice(0, accounts.length, ...result.accounts);
+    trades.splice(0, trades.length);
+    if (activeAccount !== 'all' && !accounts.some((account) => account.id === activeAccount)) {
+      activeAccount = 'all';
+    }
     updateAccountOptions();
     renderAccounts();
     renderTrades();
-    showToast(`Imported ${data.trades.length} closed demo deals from MT5.`);
-  } catch (error) {
-    showToast(error.message || 'Could not connect to the local MT5 connector.');
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Connect local MT5 demo';
+    renderConnectionDetails();
+
+    if (accounts.length) {
+      const syncStatus = document.getElementById('syncStatus');
+      syncStatus.textContent = 'Refreshing MT5 demo history…';
+      let failedSyncs = 0;
+      for (const account of accounts) {
+        if (!(await syncAccount(account.id, true))) failedSyncs += 1;
+      }
+      if (failedSyncs) {
+        showToast(`${failedSyncs} demo account(s) could not sync. Retry from Demo accounts.`);
+      }
     }
+  } catch (error) {
+    showToast(error.message);
   }
 }
-document.addEventListener('click', (e) => {
-  if (e.target.id === 'connectLocalMt5') connectLocalMt5();
-});
+async function connectMetaApiAccount(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = document.getElementById('mt5ConnectButton');
+  const message = document.getElementById('mt5ConnectMessage');
+  const formData = new FormData(form);
+  const credentials = {
+    login: String(formData.get('login') || '').trim(),
+    password: String(formData.get('password') || ''),
+    server: String(formData.get('server') || ''),
+    demoConfirmed: formData.get('demoConfirmed') === 'on',
+  };
+
+  document.getElementById('mt5Password').value = '';
+  button.disabled = true;
+  button.textContent = 'Connecting securely…';
+  showFormMessage(
+    message,
+    'Connecting to MetaQuotes-Demo. This may take a few minutes on the first connection.',
+  );
+
+  try {
+    const result = await apiRequest('/api/mt5/accounts', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+    const existingIndex = accounts.findIndex((account) => account.id === result.account.id);
+    if (existingIndex >= 0) accounts[existingIndex] = result.account;
+    else accounts.push(result.account);
+    trades.splice(
+      0,
+      trades.length,
+      ...trades.filter((trade) => trade.account !== result.account.id),
+      ...result.trades,
+    );
+    activeAccount = result.account.id;
+    form.reset();
+    updateAccountOptions();
+    renderAccounts();
+    renderTrades();
+    renderConnectionDetails();
+    showFormMessage(
+      message,
+      result.syncWarning ||
+        `Connected ${result.account.name}; imported ${result.trades.length} closed deals.`,
+      Boolean(result.syncWarning),
+    );
+    showToast(result.syncWarning || 'MetaQuotes-Demo account connected and history synced.');
+  } catch (error) {
+    showFormMessage(message, error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Connect demo account';
+  }
+}
 document
   .getElementById('dashboardAccount')
   .addEventListener('change', (e) => setAccount(e.target.value));
-document.getElementById('addAccount').addEventListener('click', () => {
-  const id = `account-${accounts.length + 1}`;
-  accounts.push({
-    id,
-    name: `New demo account · ${String(30000000 + accounts.length * 711).slice(-8)}`,
-    server: 'Awaiting local MT5 connector',
-    balance: 0,
-    lastSync: 'Not synced',
-  });
-  updateAccountOptions();
-  renderAccounts();
-  showToast(
-    'Demo account added. Run the local MT5 connector to complete its first read-only sync.',
-  );
+document.getElementById('mt5ConnectForm').addEventListener('submit', connectMetaApiAccount);
+document.getElementById('addAccount').addEventListener('click', () => showPage('connection'));
+document.getElementById('signOutButton').addEventListener('click', async () => {
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) showToast('Could not sign out. Please try again.');
 });
+document.getElementById('authForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submit = document.getElementById('authSubmit');
+  const message = document.getElementById('authMessage');
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  submit.disabled = true;
+
+  try {
+    if (authMode === 'signUp') {
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.session) {
+        showFormMessage(message, 'Check your email to confirm your account, then sign in.');
+      }
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch (error) {
+    showFormMessage(message, error.message, true);
+  } finally {
+    submit.disabled = false;
+  }
+});
+document.getElementById('authModeToggle').addEventListener('click', () => {
+  authMode = authMode === 'signIn' ? 'signUp' : 'signIn';
+  document.getElementById('authHeading').textContent =
+    authMode === 'signIn' ? 'Sign in to PaperLogix' : 'Create your PaperLogix account';
+  document.getElementById('authSubmit').textContent =
+    authMode === 'signIn' ? 'Sign in' : 'Create account';
+  document.getElementById('authModeToggle').textContent =
+    authMode === 'signIn' ? 'Need an account? Create one' : 'Already have an account? Sign in';
+  document.getElementById('authPassword').autocomplete =
+    authMode === 'signIn' ? 'current-password' : 'new-password';
+  showFormMessage(document.getElementById('authMessage'), '');
+});
+async function initializeAuthentication() {
+  const message = document.getElementById('authMessage');
+  try {
+    const response = await fetch('/api/config');
+    if (!response.ok) throw new Error('PaperLogix backend is unavailable.');
+    const config = await response.json();
+    if (!window.supabase?.createClient) {
+      throw new Error('Could not load the sign-in service. Check your connection and reload.');
+    }
+    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+    supabaseClient.auth.onAuthStateChange((_event, session) => setAuthenticationState(session));
+    const {
+      data: { session },
+      error,
+    } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    setAuthenticationState(session);
+  } catch (error) {
+    showFormMessage(
+      message,
+      `${error.message} Open PaperLogix using its hosted URL; the backend must be configured first.`,
+      true,
+    );
+  }
+}
+function setAuthenticationState(session) {
+  currentSession = session;
+  document.body.classList.toggle('auth-required', !session);
+  if (!session) {
+    activeUserId = undefined;
+    accounts.splice(0, accounts.length);
+    trades.splice(0, trades.length);
+    activeAccount = 'all';
+    updateAccountOptions();
+    renderAccounts();
+    renderTrades();
+    renderConnectionDetails();
+    return;
+  }
+  if (activeUserId === session.user.id) return;
+  activeUserId = session.user.id;
+  void loadUserAccounts();
+}
 resetSeededContent();
-document.querySelector('#connection .two-col').innerHTML =
-  '<div class="card empty"><div class="empty-icon">◉</div><b>Connect your running MT5 demo terminal</b><p class="caption" style="margin:8px auto 16px;max-width:440px">Start the local connector on this computer, keep MT5 open and signed in to a demo account, then import read-only account and closed-deal data.</p><button class="btn primary" id="connectLocalMt5">Connect local MT5 demo</button></div>';
 updateAccountOptions();
 renderAccounts();
 renderTrades();
 renderStrategies();
 renderReplay();
+renderConnectionDetails();
+void initializeAuthentication();

@@ -1,0 +1,30 @@
+{
+  "name": "paperlogix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PaperLogix demo trading journal with a MetaApi connection",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check app.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "metaapi.cloud-sdk": "^29.0.5"
+  },
+  "overrides": {
+    "axios": "^1.20.0",
+    "crypto-js": "^4.2.0",
+    "elliptic": "^6.6.1",
+    "lodash": "^4.18.1",
+    "moment": "^2.31.0",
+    "parseuri": "^3.0.2"
+  }
+}

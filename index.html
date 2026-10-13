@@ -7,7 +7,7 @@
     <title>PaperLogix</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="auth-required">
     <div class="app">
       <aside class="side">
         <div class="brand">
@@ -46,6 +46,7 @@
           <button data-page="accounts"><span class="icon">⊞</span> Demo accounts</button>
         </nav>
         <div class="side-bottom">
+          <button class="btn ghost" id="signOutButton">Sign out</button>
           <button class="btn ghost" data-page="settings">⚙ Settings</button>
         </div>
       </aside>
@@ -68,7 +69,7 @@
             <span id="crumb">Dashboard</span>
           </div>
           <div class="sync">
-            <span class="dot"></span> MT5 demo synced 4 min ago
+            <span class="dot"></span><span id="syncStatus">Sign in to sync your demo account</span>
             <button class="btn small" id="syncBtn">↻ Sync now</button>
           </div>
         </div>
@@ -817,60 +818,75 @@
               <div class="eyebrow">Read-only MT5 demo integration</div>
               <h1>Your MT5 connection</h1>
               <p class="sub">
-                PaperLogix imports approved demo-account information. It never asks for or stores
-                your MT5 password.
+                Connect your MetaQuotes-Demo account with its investor password. Account history is
+                fetched through MetaApi.
               </p>
             </div>
-            <button class="btn" id="disconnectBtn">Disconnect</button>
           </div>
           <div class="two-col">
             <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Demo account</h2>
-                  <p class="caption">Connected through local MT5 connector</p>
+              <h2>Connect MetaQuotes-Demo</h2>
+              <p class="caption">Use your MT5 account number and investor (read-only) password.</p>
+              <form id="mt5ConnectForm" class="form-grid account-connect-form">
+                <div class="field full">
+                  <label for="mt5Login">MT5 account number</label>
+                  <input
+                    class="input"
+                    id="mt5Login"
+                    name="login"
+                    inputmode="numeric"
+                    autocomplete="username"
+                    pattern="[0-9]{4,16}"
+                    maxlength="16"
+                    required
+                  />
                 </div>
-                <span class="status connected">● Connected</span>
-              </div>
-              <div class="rule-row">
-                <div class="rule-top"><span>Broker / server</span><span>DemoBroker-MT5</span></div>
-              </div>
-              <div class="rule-row">
-                <div class="rule-top">
-                  <span>Account type</span><span class="positive">DEMO</span>
+                <div class="field full">
+                  <label for="mt5Password">Investor password</label>
+                  <input
+                    class="input"
+                    id="mt5Password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                  />
                 </div>
-              </div>
-              <div class="rule-row">
-                <div class="rule-top"><span>Imported balance</span><span>$10,124.50 USD</span></div>
-              </div>
-              <div class="rule-row">
-                <div class="rule-top"><span>Last successful sync</span><span>4 min ago</span></div>
-              </div>
-              <button class="btn primary" style="margin-top: 18px" id="connectionSync">
-                ↻ Sync now
-              </button>
+                <input type="hidden" name="server" value="MetaQuotes-Demo" />
+                <label class="demo-confirm field full">
+                  <input type="checkbox" name="demoConfirmed" required />
+                  I confirm this is my MetaQuotes-Demo account and understand its credentials are
+                  sent to MetaApi to connect the account.
+                </label>
+                <div class="field full">
+                  <button class="btn primary" id="mt5ConnectButton" type="submit">
+                    Connect demo account
+                  </button>
+                  <p class="form-message" id="mt5ConnectMessage" role="status"></p>
+                </div>
+              </form>
+              <div id="connectedAccountDetails"></div>
             </div>
             <div class="card">
-              <h2>What we import</h2>
+              <h2>Read-only connection</h2>
               <div class="rule-row">
                 <div class="rule-top"><span>Included when available</span></div>
                 <div class="rule-detail">
-                  Deals, orders, positions, direction, volume, entry and exit, realised P&amp;L,
-                  swap, commission, and SL/TP snapshots.
+                  Demo account balance and up to 90 days of closed MT5 trades.
                 </div>
               </div>
               <div class="rule-row">
-                <div class="rule-top"><span>Not available on this connection</span></div>
+                <div class="rule-top"><span>Credential handling</span></div>
                 <div class="rule-detail">
-                  Stop-loss modification history and chart data. We show these as unknown, never as
-                  “no change.”
+                  PaperLogix does not save your MT5 password. MetaApi receives the investor password
+                  to establish its cloud connection. Use an investor password only.
                 </div>
               </div>
               <div class="rule-row">
-                <div class="rule-top"><span>Never collected</span></div>
+                <div class="rule-top"><span>Trading permissions</span></div>
                 <div class="rule-detail">
-                  Your MT5 master password, investor password, deposits, withdrawals, or
-                  live-account data.
+                  This PaperLogix integration only reads account information and history. It does
+                  not expose trade-placement actions.
                 </div>
               </div>
             </div>
@@ -912,7 +928,8 @@
               <h1>Demo accounts</h1>
               <p class="sub">
                 Connect multiple MT5 demo accounts and choose whether the dashboard shows one
-                account or a combined view. Passwords are never collected.
+                account or a combined view. Use an investor password; MetaApi handles the
+                connection credentials.
               </p>
             </div>
             <button class="btn primary" id="addAccount">+ Add demo account</button>
@@ -934,49 +951,56 @@
         </section>
       </main>
     </div>
-    <dialog id="connectDialog">
-      <div class="modal-head">
-        <div>
-          <b>Connect an MT5 demo account</b>
-          <div class="caption">Read-only connection setup</div>
+    <section id="authScreen" class="auth-screen" aria-labelledby="authHeading">
+      <div class="auth-card">
+        <div class="brand auth-brand">
+          <div class="brand-mark"></div>
+          <span class="brand-name">Paper<span>Logix</span></span>
         </div>
-        <button class="x" onclick="connectDialog.close()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="notice">
-          <span>ⓘ</span>
-          <div>
-            <strong>Demo accounts only.</strong> Never share your MT5 password with PaperLogix.
+        <div class="eyebrow">Private trading journal</div>
+        <h1 id="authHeading">Sign in to PaperLogix</h1>
+        <p class="sub">
+          Create an account or sign in to securely connect your MetaQuotes-Demo history.
+        </p>
+        <form id="authForm" class="auth-form">
+          <div class="field">
+            <label for="authEmail">Email</label>
+            <input
+              class="input"
+              id="authEmail"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+            />
           </div>
-        </div>
-        <ol class="steps">
-          <li>Open and sign in to your demo account in the MT5 desktop terminal.</li>
-          <li>Run the local PaperLogix connector from the same computer.</li>
-          <li>
-            Approve the displayed account identifier and data fields, then start the first sync.
-          </li>
-        </ol>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" onclick="connectDialog.close()">Cancel</button
-        ><button
-          class="btn primary"
-          onclick="
-            connectDialog.close();
-            showToast('Connector setup is ready. Keep MT5 open for your first sync.');
-          "
-        >
-          I understand
+          <div class="field">
+            <label for="authPassword">Password</label>
+            <input
+              class="input"
+              id="authPassword"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="8"
+              required
+            />
+          </div>
+          <button class="btn primary" id="authSubmit" type="submit">Sign in</button>
+        </form>
+        <button class="auth-switch" id="authModeToggle" type="button">
+          Need an account? Create one
         </button>
+        <p class="form-message" id="authMessage" role="status"></p>
       </div>
-    </dialog>
+    </section>
     <dialog id="reflectionDialog">
       <div class="modal-head">
         <div>
           <b>Post-trade reflection</b>
           <div class="caption">Attach this after an MT5 trade syncs.</div>
         </div>
-        <button class="x" onclick="reflectionDialog.close()">×</button>
+        <button class="x" id="reflectionClose" type="button">×</button>
       </div>
       <div class="modal-body">
         <div class="field">
@@ -994,14 +1018,8 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn" onclick="reflectionDialog.close()">Cancel</button
-        ><button
-          class="btn primary"
-          onclick="
-            reflectionDialog.close();
-            showToast('Reflection saved. It will be linked after your next sync.');
-          "
-        >
+        <button class="btn" id="reflectionCancel" type="button">Cancel</button>
+        <button class="btn primary" id="reflectionSave" type="button">
           Save reflection
         </button>
       </div>
@@ -1025,6 +1043,7 @@
         z-index: 5;
       "
     ></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>
