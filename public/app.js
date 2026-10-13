@@ -627,7 +627,19 @@ document.getElementById('authForm').addEventListener('submit', async (event) => 
       const { error } = await supabaseClient.auth.setSession(result.session);
       if (error) throw error;
     } else if (authMode === 'signUp') {
-      showFormMessage(message, 'Check your email to confirm your account, then sign in.');
+      if (result.user?.identities?.length === 0) {
+        showFormMessage(
+          message,
+          'This email is already registered. Please sign in below.',
+        );
+        authMode = 'signIn';
+        document.getElementById('authHeading').textContent = 'Sign in to PaperLogix';
+        document.getElementById('authSubmit').textContent = 'Sign in';
+        document.getElementById('authModeToggle').textContent = 'Need an account? Create one';
+        document.getElementById('authPassword').autocomplete = 'current-password';
+      } else {
+        showFormMessage(message, 'Check your email to confirm your account, then sign in.');
+      }
     }
   } catch (error) {
     const messageText =
@@ -671,6 +683,37 @@ async function initializeAuthentication() {
     }
     supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
     supabaseClient.auth.onAuthStateChange((_event, session) => setAuthenticationState(session));
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const errorParam = urlParams.get('error_description') || urlParams.get('error');
+
+    if (errorParam) {
+      showFormMessage(message, errorParam, true);
+    } else if (code) {
+      try {
+        const { data, error: exchangeError } =
+          await supabaseClient.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          console.warn('Auth code exchange notice:', exchangeError.message);
+          showFormMessage(
+            message,
+            'Email confirmed! Please sign in with your email and password below.',
+          );
+          if (authMode === 'signUp') {
+            document.getElementById('authModeToggle').click();
+          }
+        } else if (data?.session) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setAuthenticationState(data.session);
+          showToast('Email confirmed! Welcome to PaperLogix.');
+          return;
+        }
+      } catch (err) {
+        console.error('Code exchange failed:', err);
+      }
+    }
+
     const {
       data: { session },
       error,
