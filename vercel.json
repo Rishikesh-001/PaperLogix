@@ -1,7 +1,6 @@
 {
-  "outputDirectory": "public",
   "functions": {
-    "api/[...path].js": {
+    "app.js": {
       "maxDuration": 60
     }
   }

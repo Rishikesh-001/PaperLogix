@@ -58,9 +58,9 @@ and MetaQuotes-Demo server/account support. Do not put the token in the frontend
 
 1. Push this repository to GitHub, GitLab, or Bitbucket.
 2. In Vercel, select **Add New → Project** and import the repository.
-3. Keep the project root as the **Root Directory**. The included [`vercel.json`](./vercel.json)
-   publishes the `public` folder and routes `/api/*` requests to a Node.js function. No framework
-   preset or custom build command is required.
+3. Set the **Root Directory** to the repository root—the folder containing `package.json` and
+   `app.js`—not the `public` folder. Vercel detects the Express app from the root `app.js` file;
+   the static browser assets remain in `public/`. No custom build command is required.
 4. Add these environment variables in **Project Settings → Environment Variables** for every
    environment you plan to deploy:
 
@@ -75,10 +75,10 @@ and MetaQuotes-Demo server/account support. Do not put the token in the frontend
 6. Open the deployment, create a PaperLogix login, then go to **MT5 connection** and enter your
    numeric MetaQuotes-Demo login and investor password.
 
-The API function is limited to 60 seconds per request. A new MetaApi terminal may take longer to
-become ready, so PaperLogix saves the connection first and starts its history sync separately. If
-the first sync is not ready before the function limit, the account remains connected; retry with
-**Sync now** after a short wait.
+The Express function is configured for up to 60 seconds per request. A new MetaApi terminal may
+take longer to become ready, so PaperLogix saves the connection first and starts its history sync
+separately. If the first sync is not ready before the function limit, the account remains connected;
+retry with **Sync now** after a short wait.
 
 ## MT5 account requirements
 
@@ -117,8 +117,7 @@ Keep `.env` private; `.env` files are excluded from Git.
 | `public/index.html` | App pages, sign-in, and MT5 connection form |
 | `public/styles.css` | Theme, layout, and responsive styling |
 | `public/app.js` | Supabase sign-in and browser interactions |
-| `api/[...path].js` | Vercel serverless function entry point |
-| `server.js` | Authenticated Express API and MetaApi integration |
+| `app.js` | Authenticated Express API and MetaApi integration; Vercel entry point |
 | `supabase-schema.sql` | Per-user account and deal tables with row-level security |
 | `vercel.json` | Static output and function configuration |
 
@@ -126,8 +125,9 @@ Keep `.env` private; `.env` files are excluded from Git.
 
 **The page or API is unavailable**
 
-Check the Vercel deployment and function logs. Visit `/api/health` to verify that the function is
-running, and confirm all four server environment variables are set for the deployment environment.
+Check the Vercel deployment and function logs. Visit `/api/health` to verify that the Express
+function is running, and confirm all four server environment variables are set for the deployment
+environment.
 
 **PaperLogix cannot sign in**
 
