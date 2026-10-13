@@ -118,6 +118,7 @@ Keep `.env` private; `.env` files are excluded from Git.
 | `public/styles.css` | Theme, layout, and responsive styling |
 | `public/app.js` | Supabase sign-in and browser interactions |
 | `app.js` | Authenticated Express API and MetaApi integration; Vercel entry point |
+| `server.js` | Local development server bootstrap |
 | `supabase-schema.sql` | Per-user account and deal tables with row-level security |
 | `vercel.json` | Static output and function configuration |
 

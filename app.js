@@ -50,7 +50,6 @@ function initializeIntegrations() {
 }
 
 const app = express();
-const port = Number(process.env.PORT || 3000);
 const frontendDirectory = path.join(__dirname, 'public');
 const allowedMt5Server = 'MetaQuotes-Demo';
 
@@ -451,11 +450,5 @@ app.use((error, req, res, _next) => {
   if (res.headersSent) return;
   return sendError(res, 500, 'PaperLogix could not complete the request. Please try again.');
 });
-
-if (require.main === module) {
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`PaperLogix listening on port ${port}`);
-  });
-}
 
 module.exports = app;
